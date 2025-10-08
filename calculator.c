@@ -33,7 +33,7 @@ int calculate(int a, int b, char op, int* error) {
     *error = 2;
     return 0;
 }
-int result(char* expr, int* result) {
+int result1(char* expr, int* result) {
     int values[MAX_LEN], val_top = -1;
     char ops[MAX_LEN];
     int op_top = -1;
@@ -102,7 +102,7 @@ void Input(){
     }
     input[count] = '\0';
 
-    int status = result(input, &result);
+    int status = result1(input, &result);
 
     if (status == 1) {
         printf("Error: division by zero\n");
