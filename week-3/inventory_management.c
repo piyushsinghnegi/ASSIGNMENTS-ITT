@@ -1,72 +1,142 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
+#include <stdbool.h>
 
-#define MAX_INITIAL_PRODS 100
-#define MAX_PROD_ID 10000
-#define MAX_PROD_NAME_LEN 50
-#define MAX_PROD_PRICE 100000
-#define MAX_PROD_QTY 1000000
+#define MAX_INITIAL_PRODUCTS 100
+#define MAX_PRODUCT_ID 10000
+#define MAX_PRODUCT_NAME_LENGTH 50
+#define MAX_PRODUCT_PRICE 100000
+#define MAX_PRODUCT_QTY 1000000
 
-struct ProductInfo{
-    int prodId;
-    char prodName[MAX_PROD_NAME_LEN];
-    float prodPrice;
-    int prodQty;
-    int error;
+#define MIN_INITIAL_PRODUCTS 1
+#define MIN_PRODUCT_ID 1
+#define MIN_PRODUCT_NAME_LENGTH 1
+#define MIN_PRODUCT_PRICE 0
+#define MIN_PRODUCT_QTY 0
+
+struct ProductDetails{
+    int id;
+    char name[MAX_PRODUCT_NAME_LENGTH];
+    float price;
+    int qty;
 };
 
-void addProd(struct ProductInfo **prodArr, int *prodLen){
-    *prodLen += 1;
+bool isValidName(const char *name) {
+    int nameLength = strlen(name);
+    if (nameLength < MIN_PRODUCT_NAME_LENGTH || nameLength >= MAX_PRODUCT_NAME_LENGTH) {
+        return false;
+    }
+    for (int i = 0; i < nameLength; i++) {
+        if (!isalpha(name[i]) && name[i] != ' ') {
+            return false; // only letters and spaces allowed
+        }
+    }
+    return true;
+}
 
-    *prodArr = realloc(*prodArr, (*prodLen) * sizeof(struct ProductInfo));
+bool haveDuplicateID(struct ProductDetails *products, int numberOfProducts, int id) {
+    for(int product=0; product<numberOfProducts; product++) {
+        if(products[product].id == id) {
+            return true;
+        }
+    }
+    return false;
+}
 
-    if(*prodArr == NULL){
+void addProduct(struct ProductDetails **products, int *numberOfProducts){
+    *numberOfProducts += 1;
+
+    *products = realloc(*products, (*numberOfProducts) * sizeof(struct ProductDetails));
+
+    if(*products == NULL){
         printf("Allocation failed!");
         return;
     }
 
-
     printf("Enter new product details:-\n");
-    printf("Product ID: ");
-    scanf("%d",&(*prodArr)[*prodLen - 1].prodId);
-    printf("Product Name: ");
-    scanf("%s",(*prodArr)[*prodLen - 1].prodName);
-    printf("Product Price: ");
-    scanf("%f",&(*prodArr)[*prodLen -1].prodPrice);
-    printf("Product Quantity: ");
-    scanf("%d",&(*prodArr)[*prodLen -1].prodQty);  
-    (*prodArr)[*prodLen -1].error = 0;
+    do {
+        printf("Product ID: ");
+        if(scanf("%d",&(*products)[*numberOfProducts - 1].id) != 1 || (*products)[*numberOfProducts - 1].id <MIN_PRODUCT_ID || (*products)[*numberOfProducts - 1].id > MAX_PRODUCT_ID){
+            printf("should be in range [%d, %d].\n", MIN_PRODUCT_ID, MAX_PRODUCT_ID);
+            while (getchar() != '\n');
+            continue;
+        }
+        if (haveDuplicateID(*products, *numberOfProducts - 1, (*products)[*numberOfProducts - 1].id)) {
+            printf("cannot have duplicate id!.\n");
+            while (getchar() != '\n');
+            continue;
+        }
+        break;
+    } while (1);
 
-    if((*prodArr)[*prodLen -1].prodId > MAX_PROD_ID || (*prodArr)[*prodLen -1].prodPrice > MAX_PROD_PRICE || (*prodArr)[*prodLen -1].prodQty > MAX_PROD_QTY ){
-        (*prodArr)[*prodLen -1].error = 1;
-    }
+    do {
+        printf("Product Name: ");
+        scanf(" %[^\n]", (*products)[*numberOfProducts - 1].name);
+        if (!isValidName((*products)[*numberOfProducts - 1].name)) {
+            printf("Invalid name! Use only letters and spaces, length %d-%d.\n", MIN_PRODUCT_NAME_LENGTH, MAX_PRODUCT_NAME_LENGTH-1);
+            while(getchar() != '\n');
+            continue;
+        }
+        break;
+    } while (1);
+
+    do {
+        printf("Product Price: ");
+        if(scanf("%f",&(*products)[*numberOfProducts -1].price) != 1 || (*products)[*numberOfProducts -1].price < MIN_PRODUCT_PRICE || (*products)[*numberOfProducts -1].price > MAX_PRODUCT_PRICE ){
+            printf("should be in range [%d, %d].\n", MIN_PRODUCT_PRICE, MAX_PRODUCT_PRICE);
+            while (getchar() != '\n');
+            continue;
+        }
+        break;
+    } while (1);
+
+    do {
+        printf("Product Quantity: ");
+        if(scanf("%d",&(*products)[*numberOfProducts -1].qty) != 1 || (*products)[*numberOfProducts -1].qty < MIN_PRODUCT_QTY || (*products)[*numberOfProducts -1].qty > MAX_PRODUCT_QTY ){
+            printf("should be in range [%d, %d].\n", MIN_PRODUCT_QTY, MAX_PRODUCT_QTY);
+            while (getchar() != '\n');
+            continue;
+        }
+        break;
+    } while (1);
     printf("Product added successfully!\n");
 }
 
-void viewProd(struct ProductInfo *prodArr,int prodLen){
+void listProducts(struct ProductDetails *products,int numberOfProducts){
     printf("\n========= PRODUCT LIST ========= \n");
-    for(int i =0;i < prodLen;i++){
-        if(prodArr[i].error != 1){
-            printf(" Product ID: %d | Name: %s | Price: %f | Quantity: %d \n",prodArr[i].prodId,prodArr[i].prodName,prodArr[i].prodPrice,prodArr[i].prodQty);
-        }else{
-            printf("Invalid Product!\n");
-        }
+    for(int product =0 ; product < numberOfProducts ; product++){
+        printf(" Product ID: %d | Name: %s | Price: %f | Quantity: %d \n",products[product].id,products[product].name,products[product].price,products[product].qty);
     }
 
 }
 
-void updateQty(struct ProductInfo *prodArr,int prodLen){
-    int tempId;
+void updateProductQty(struct ProductDetails *products,int numberOfProducts){
+    int searchProductId;
     int found = 0;
     
-    printf("Enter Product ID to update quantity: ");
-    scanf("%d",&tempId);
+    do{
+        printf("Enter Product ID to update quantity: ");
+        if(scanf("%d",&searchProductId) != 1 || searchProductId < MIN_PRODUCT_ID || searchProductId > MAX_PRODUCT_ID){
+            printf("should be in range [%d,%d]",MIN_PRODUCT_ID,MAX_PRODUCT_ID);
+            while (getchar() != '\n');
+            continue;
+        }
+        break;
+    } while(1);
 
-    for (int i = 0; i < prodLen; i++) {
-        if (prodArr[i].prodId == tempId && prodArr[i].error != 1) {
-            printf("Enter new Quantity: ");
-            scanf("%d", &prodArr[i].prodQty);
+    for (int product = 0; product < numberOfProducts; product++) {
+        if (products[product].id == searchProductId) {
+            do{
+                printf("Enter new Quantity: ");
+                if(scanf("%d", &products[product].qty) != 1 || products[product].qty < MIN_PRODUCT_QTY || products[product].qty > MAX_PRODUCT_QTY){
+                    printf("should be in range [%d,%d]",MIN_PRODUCT_QTY,MAX_PRODUCT_QTY);
+                    while (getchar() != '\n');
+                    continue;
+                }
+                break;
+            } while (1);
             printf("Quantity updated successfully!\n");
             found = 1;
             break;
@@ -77,16 +147,23 @@ void updateQty(struct ProductInfo *prodArr,int prodLen){
     }
 }
 
-void searchById(struct ProductInfo *prodArr,int prodLen){
-    int tempId;
+void searchProductById(struct ProductDetails *products,int numberOfProducts){
+    int searchId;
     int found = 0;
 
-    printf("Enter Product ID to search: ");
-    scanf("%d",&tempId);
+    do{
+        printf("Enter Product ID to search: ");
+        if(scanf("%d",&searchId) != 1 || searchId < MIN_PRODUCT_ID || searchId > MAX_PRODUCT_ID){
+            printf("should be in range [%d,%d]",MIN_PRODUCT_ID,MAX_PRODUCT_ID);
+            while (getchar() != '\n');
+            continue;
+        }
+        break;
+    } while (1);
 
-    for (int i = 0; i < prodLen; i++) {
-        if (prodArr[i].prodId == tempId && prodArr[i].error != 1) {
-            printf(" Product ID: %d | Name: %s | Price: %f | Quantity: %d \n",prodArr[i].prodId,prodArr[i].prodName,prodArr[i].prodPrice,prodArr[i].prodQty);
+    for (int product = 0; product < numberOfProducts; product++) {
+        if (products[product].id == searchId) {
+            printf(" Product ID: %d | Name: %s | Price: %f | Quantity: %d \n",products[product].id,products[product].name,products[product].price,products[product].qty);
             found++;
             break;
         }
@@ -96,17 +173,32 @@ void searchById(struct ProductInfo *prodArr,int prodLen){
     }
 }
 
-void searchByName(struct ProductInfo *prodArr,int prodLen){
-    char tempName[MAX_PROD_NAME_LEN];
+void searchProductByName(struct ProductDetails *products,int numberOfProducts){
+    char searchName[MAX_PRODUCT_NAME_LENGTH];
     int isFound = 0;
 
-    printf("Enter name to search (partial allowed): ");
-    scanf("%s",tempName);
+    do{
+        printf("Enter name to search (partial allowed): ");
+        if(scanf("%49s",searchName) != 1){
+            printf("Invalid Input");
+            while (getchar() != '\n');
+            continue;
+        }
+        for (int i = 0; searchName[i]; i++) {
+            if (isdigit(searchName[i])) {
+                printf("Enter valid name!");
+                
+                continue;
+            }
+        }
+        break;
+    } while (1);
+    
 
-    for(int i=0;i<prodLen;i++){
-        if(strstr(prodArr[i].prodName, tempName) && prodArr[i].error != 1){
+    for(int product=0 ; product<numberOfProducts ; product++){
+        if(strstr(products[product].name, searchName) != NULL){
             isFound =1;
-            printf(" Product ID: %d | Name: %s | Price: %f | Quantity: %d \n",prodArr[i].prodId,prodArr[i].prodName,prodArr[i].prodPrice,prodArr[i].prodQty);
+            printf(" Product ID: %d | Name: %s | Price: %f | Quantity: %d \n",products[product].id,products[product].name,products[product].price,products[product].qty);
         }
     }
 
@@ -116,23 +208,35 @@ void searchByName(struct ProductInfo *prodArr,int prodLen){
 }
 
 
-void searchByRange(struct ProductInfo *prodArr,int prodLen){
-    float maxPriceTemp;
-    float minPriceTemp;
+void searchProductByPriceRange(struct ProductDetails *products,int numberOfProducts){
+    float maxPrice;
+    float minPrice;
     int found = 0;
     
     printf("Enter minimum price: ");
-    scanf("%f",&minPriceTemp);
+    do{
+        if(scanf("%f",&minPrice) != 1 || minPrice < MIN_PRODUCT_PRICE || minPrice > MAX_PRODUCT_PRICE){
+            printf("Price should be in range [%d,%d]\n",MIN_PRODUCT_PRICE,MAX_PRODUCT_PRICE);
+            while (getchar() != '\n');
+            continue;
+        }
+        break;
+    } while (1);
 
-    printf("Enter max price: ");
-    scanf("%f",&maxPriceTemp);
+    do{
+        printf("Enter max price: ");
+        if(scanf("%f",&maxPrice) != 1 || maxPrice < MIN_PRODUCT_PRICE || maxPrice > MAX_PRODUCT_PRICE){
+            printf("Price should be in range [%d,%d]\n",MIN_PRODUCT_PRICE,MAX_PRODUCT_PRICE);
+            while (getchar() != '\n');
+            continue;
+        }
+        break;
+    }while(1);
 
-    for(int i=0;i < prodLen;i++){
-        if(prodArr[i].prodPrice <= maxPriceTemp && prodArr[i].prodPrice >= minPriceTemp){
-            if(prodArr[i].error == 0){
-                printf("ID: %d | Name: %s | Price: %.2f | Qty: %d\n", prodArr[i].prodId, prodArr[i].prodName, prodArr[i].prodPrice, prodArr[i].prodQty);
-                found++;
-            }
+    for(int product=0; product < numberOfProducts ; product++){
+        if(products[product].price >= minPrice && products[product].price <= maxPrice){
+            printf("ID: %d | Name: %s | Price: %.2f | Qty: %d\n", products[product].id, products[product].name, products[product].price, products[product].qty);
+            found++;
         }
     }
 
@@ -141,82 +245,127 @@ void searchByRange(struct ProductInfo *prodArr,int prodLen){
     }
 }   
 
-void deleteProd(struct ProductInfo **prodArr,int *prodLen){
-    int tempId;
+void deleteProductById(struct ProductDetails **products,int *numberOfProducts){
+    int IdToDelete;
     int found=0;
-    int tempArrIndex = 0;
+    int tempProductLength = 0;
 
-    struct ProductInfo *tempProdArr = (struct ProductInfo*) calloc((*prodLen)-1 ,sizeof(struct ProductInfo));
+    struct ProductDetails *tempProduct = (struct ProductDetails*) calloc((*numberOfProducts)-1 ,sizeof(struct ProductDetails));
     
-    if(tempProdArr == NULL){
+    if(tempProduct == NULL){
         printf("Allocation failed!");
         return;
     }
 
-    printf("Enter Product ID to delete: ");
-    scanf("%d",&tempId);
+    do{
+        printf("Enter Product ID to delete: ");
+        if (scanf("%d",&IdToDelete) != 1 || IdToDelete < MIN_PRODUCT_ID || IdToDelete > MAX_PRODUCT_ID){
+            printf("should be in range [%d,%d]",MIN_PRODUCT_ID,MAX_PRODUCT_ID);
+            while (getchar() != '\n');
+            continue;
+        }
+        break;
+    } while(1);
 
-    for(int i=0;i<*prodLen;i++){
-        if((*prodArr)[i].prodId == tempId && (*prodArr)[i].error!=1){
+    for(int product=0;product<*numberOfProducts;product++){
+        if((*products)[product].id == IdToDelete){
             found++;
             continue;
-        } else if (tempArrIndex < (*prodLen) - 1){
-            tempProdArr[tempArrIndex] = (*prodArr)[i];
-            tempArrIndex++;
+        } else if (tempProductLength < (*numberOfProducts) - 1){
+            tempProduct[tempProductLength] = (*products)[product];
+            tempProductLength++;
         }
     }
     
     if(found == 0){
         printf("No product found for given id!\n");
-        free(tempProdArr);
+        free(tempProduct);
+        tempProduct = NULL;
     } else {
-        free(*prodArr); 
-        *prodArr = tempProdArr;
-        *prodLen = *prodLen - 1;
+        free(*products); 
+        *products = tempProduct;
+        *numberOfProducts = *numberOfProducts - 1;
         printf("Deleted Successfully\n");
     }
 }
 
-void getInitialProd(int productsLen,struct ProductInfo *prodArr){
-    for(int itr = 0;itr<productsLen;itr++){
-        printf("\nEnter details for product %d :-",itr+1);
-        printf("\nProduct ID: ");
-        scanf("%d",&prodArr[itr].prodId);
-        printf("Product Name: ");
-        scanf("%s",prodArr[itr].prodName);
-        printf("Product Price: ");
-        scanf("%f",&prodArr[itr].prodPrice);
-        printf("Product Quantity: ");
-        scanf("%d",&prodArr[itr].prodQty);
-        prodArr[itr].error = 0;
+void getInitialProducts(int numberOfProducts,struct ProductDetails *products){
+    for(int product = 0; product < numberOfProducts ; product++){
+        printf("\nEnter details for product %d :-",product + 1);
         
-        if(prodArr[itr].prodId > MAX_PROD_ID || prodArr[itr].prodPrice > MAX_PROD_PRICE || prodArr[itr].prodQty > MAX_PROD_QTY ){
-            prodArr[itr].error = 1;
-        }
+        do{
+            printf("\nProduct ID: ");
+            if(scanf("%d",&products[product].id) != 1 || products[product].id < MIN_PRODUCT_ID || products[product].id > MAX_PRODUCT_ID){
+                printf("should be in range [%d,%d]",MIN_PRODUCT_ID,MAX_PRODUCT_ID);
+                while (getchar() != '\n');
+                continue;
+            }
+            if(haveDuplicateID(products,product, products[product].id)){
+                printf("Duplicate Id not allowed");
+                continue;
+            }
+            break;
+        } while(1);
+        
+        
+        do{
+            printf("Product Name: ");
+            scanf(" %[^\n]", products[product].name);
+            if (!isValidName(products[product].name)) {
+                printf("Invalid name! Use only letters and spaces, length %d-%d.\n", MIN_PRODUCT_NAME_LENGTH, MAX_PRODUCT_NAME_LENGTH-1);
+                while(getchar() != '\n');
+                continue;
+            }
+            break;
+        }while(1);
+
+        do{
+            printf("Product Price: ");
+            if (scanf("%f",&products[product].price) != 1 || products[product].price < MIN_PRODUCT_PRICE || products[product].price > MAX_PRODUCT_PRICE){
+                printf("should be in range [%d,%d]",MIN_PRODUCT_PRICE,MAX_PRODUCT_PRICE);
+                while (getchar() != '\n');
+                continue;
+            }
+            break;
+        }while(1);
+
+        do{
+            printf("Product Quantity: ");
+            if (scanf("%d",&products[product].qty) != 1 || products[product].qty < MIN_PRODUCT_QTY || products[product].qty > MAX_PRODUCT_QTY){
+                printf("should be in range [%d,%d]",MIN_PRODUCT_QTY,MAX_PRODUCT_QTY);
+                while (getchar() != '\n');
+                continue;
+            }
+            break;
+        }while(1);
     }
 }
 
 
 int main(){
-    int productsLen;
+    int numberOfProducts;
     int choice;
 
     printf("\n========= INVENTORY MENU =========\n");
-    printf("Enter the initial number of products: ");
     
-    if(scanf("%d",&productsLen) != 1 || productsLen < 1 || productsLen > MAX_INITIAL_PRODS){
-        printf("Should be in range [1,100]!\n");
-        return 1;
-    }
+    do{
+        printf("Enter the initial number of products: ");
+        if(scanf("%d",&numberOfProducts) != 1 || numberOfProducts < MIN_INITIAL_PRODUCTS || numberOfProducts > MAX_INITIAL_PRODUCTS){
+            printf("Should be in range [%d,%d]!\n",MIN_INITIAL_PRODUCTS,MAX_INITIAL_PRODUCTS);
+            while (getchar() != '\n');
+            continue;
+        }
+        break;
+    } while(1);
     
-    struct ProductInfo *prodArr = (struct ProductInfo*) calloc(productsLen ,sizeof(struct ProductInfo));
+    struct ProductDetails *products = (struct ProductDetails*) calloc(numberOfProducts ,sizeof(struct ProductDetails));
 
-    if(prodArr == NULL){
+    if(products == NULL){
         printf("Allocation failed!\n");
         return 1;
     }
 
-    getInitialProd(productsLen,prodArr);
+    getInitialProducts(numberOfProducts,products);
 
     do{
         printf("\n========= INVENTORY MENU ========= \n");
@@ -226,25 +375,25 @@ int main(){
 
         switch(choice){
             case 1:
-                addProd(&prodArr,&productsLen);
+                addProduct(&products,&numberOfProducts);
                 break;
             case 2:
-                viewProd(prodArr,productsLen);
+                listProducts(products,numberOfProducts);
                 break;
             case 3:
-                updateQty(prodArr,productsLen);
+                updateProductQty(products,numberOfProducts);
                 break;
             case 4:
-                searchById(prodArr,productsLen);
+                searchProductById(products,numberOfProducts);
                 break;
             case 5:
-                searchByName(prodArr,productsLen);
+                searchProductByName(products,numberOfProducts);
                 break;
             case 6:
-                searchByRange(prodArr,productsLen);
+                searchProductByPriceRange(products,numberOfProducts);
                 break;
             case 7:
-                deleteProd(&prodArr,&productsLen);
+                deleteProductById(&products,&numberOfProducts);
                 break;
             case 8:
                 printf("\nExiting...");
@@ -254,7 +403,7 @@ int main(){
         };
     } while (choice != 8);
 
-    free(prodArr);
+    free(products);
     printf("\nMemory released successfully.");
 
     return 0;
