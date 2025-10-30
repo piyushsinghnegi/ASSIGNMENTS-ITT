@@ -112,7 +112,7 @@ void listProducts(struct ProductDetails *products,int numberOfProducts){
 
 }
 
-void updateProductQty(struct ProductDetails *products,int numberOfProducts){
+void updateProductQuantity(struct ProductDetails *products,int numberOfProducts){
     int searchProductId;
     int found = 0;
     
@@ -381,7 +381,7 @@ int main(){
                 listProducts(products,numberOfProducts);
                 break;
             case 3:
-                updateProductQty(products,numberOfProducts);
+                updateProductQuantity(products,numberOfProducts);
                 break;
             case 4:
                 searchProductById(products,numberOfProducts);
